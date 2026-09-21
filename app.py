@@ -1,44 +1,42 @@
-
-from flask import Flask, render_template, request
-from summarizer import summarize_bert
+"""
+app.py
+Flask web application for the Automated Text Summarization System.
+"""
 import os
-import PyPDF2
-from PIL import Image
-import pytesseract
+from flask import Flask, render_template, request
+from summarizer import summarize_tfidf, get_stats
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads'
 
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
-def extract_text(file):
-    if file.filename.endswith('.txt'):
-        return file.read().decode('utf-8')
-    elif file.filename.endswith('.pdf'):
-        pdf = PyPDF2.PdfReader(file)
-        text = ''
-        for page in pdf.pages:
-            text += page.extract_text()
-        return text
-    elif file.filename.endswith(('.jpg', '.jpeg', '.png')):
-        image = Image.open(file)
-        return pytesseract.image_to_string(image)
-    return ""
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    summary = ""
+    summary = None
+    stats = None
+    original_text = ""
+    num_sentences = 3
+
     if request.method == "POST":
-        input_text = request.form.get("text", "")
-        file = request.files.get("file")
+        original_text = request.form.get("original_text", "").strip()
+        num_sentences = int(request.form.get("num_sentences", 3))
+        if original_text:
+            summary, _ = summarize_tfidf(original_text, num_sentences=num_sentences)
+            stats = get_stats(original_text, summary)
 
-        if file and file.filename != "":
-            input_text = extract_text(file)
+    return render_template(
+        "index.html",
+        summary=summary,
+        stats=stats,
+        original_text=original_text,
+        num_sentences=num_sentences,
+    )
 
-        if input_text.strip() != "":
-            summary = summarize_bert(input_text)
 
-    return render_template("index.html", summary=summary)
+@app.route("/health")
+def health():
+    return {"status": "ok"}
+
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5001))
+    app.run(host="0.0.0.0", port=port, debug=False)
