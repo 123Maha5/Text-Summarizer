@@ -2,8 +2,7 @@
 
 An NLP web application that generates concise summaries from long, unstructured text using extractive summarization — condensing articles or reports down to their most important sentences.
 
-🔗 **Live Demo:** [add your deployed link here after Step 6 of the guide]
-🔗 **GitHub:** [add your repo link here]
+
 
 ## Features
 - Extractive text summarization using **TF-IDF sentence scoring**
